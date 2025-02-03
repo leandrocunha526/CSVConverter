@@ -222,3 +222,75 @@ namespace AppleDeviceCsvExporter
     }
 }
 ```
+
+```C#
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
+
+namespace AppleDevicesCsvExporter
+{
+    public class DeviceData
+    {
+        public string Name { get; set; }
+        public Dictionary<string, object> Data { get; set; }
+    }
+
+    class Program
+    {
+        static async Task Main(string[] args)
+        {
+            var apiUrl = "https://api.restful-api.dev/objects";
+            var devices = await GetDevicesFromApi(apiUrl);
+
+            var appleDevices = FilterAppleDevices(devices);
+
+            ExportToCsv(appleDevices, "AppleDevices.csv");
+        }
+
+        static async Task<List<DeviceData>> GetDevicesFromApi(string apiUrl)
+        {
+            using var client = new HttpClient();
+            var response = await client.GetStringAsync(apiUrl);
+            var devices = JsonConvert.DeserializeObject<List<DeviceData>>(response);
+            return devices;
+        }
+
+        static List<DeviceData> FilterAppleDevices(List<DeviceData> devices)
+        {
+            var appleDevices = new List<DeviceData>();
+
+            foreach (var device in devices)
+            {
+                if (device.Name.Contains("Apple"))
+                {
+                    appleDevices.Add(device);
+                }
+            }
+
+            return appleDevices;
+        }
+
+        static void ExportToCsv(List<DeviceData> devices, string fileName)
+        {
+            using var writer = new StreamWriter(fileName);
+            writer.WriteLine("Nome,Preço"); // Cabeçalho do CSV
+
+            foreach (var device in devices)
+            {
+                var price = "N/A";
+
+                if (device.Data != null && device.Data.ContainsKey("price"))
+                {
+                    price = device.Data["price"].ToString();
+                }
+
+                writer.WriteLine($"{device.Name},{price}");
+            }
+        }
+    }
+}
+```
